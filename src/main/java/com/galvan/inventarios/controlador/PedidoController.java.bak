@@ -1,0 +1,120 @@
+package com.galvan.inventarios.controlador;
+
+import com.galvan.inventarios.dto.PedidoDTO;
+import com.galvan.inventarios.modelo.Pedido;
+import com.galvan.inventarios.modelo.Usuario;
+import com.galvan.inventarios.repositorio.UsuarioRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
+import java.util.Map;
+
+/*
+ @RestController
+ @RequestMapping("/api/pedidos")
+ @CrossOrigin(origins = "http://localhost:4200")
+public class PedidoController {
+
+    @Autowired
+    private PedidoService pedidoService;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
+    // Crear pedido
+    @PostMapping("/crear")
+    public ResponseEntity<?> crearPedido(@RequestBody PedidoDTO pedidoDTO) {
+        try {
+            Usuario usuario = obtenerUsuarioActual();
+            Pedido pedido = pedidoService.crearPedido(usuario, pedidoDTO);
+            return ResponseEntity.ok(Map.of(
+                    "mensaje", "Pedido creado exitosamente",
+                    "pedido", pedido,
+                    "numeroSeguimiento", pedido.getNumeroSeguimiento()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // Obtener mis pedidos
+    @GetMapping("/mis-pedidos")
+    public ResponseEntity<?> obtenerMisPedidos() {
+        Usuario usuario = obtenerUsuarioActual();
+        List<Pedido> pedidos = pedidoService.obtenerPedidosUsuario(usuario);
+        return ResponseEntity.ok(pedidos);
+    }
+
+    // Obtener detalle de un pedido
+    @GetMapping("/{pedidoId}")
+    public ResponseEntity<?> obtenerPedido(@PathVariable Long pedidoId) {
+        try {
+            Pedido pedido = pedidoService.obtenerPedido(pedidoId);
+            Usuario usuarioActual = obtenerUsuarioActual();
+
+            // Verificar que el pedido pertenezca al usuario o sea admin
+            if (!pedido.getUsuario().getId().equals(usuarioActual.getId())) {
+                return ResponseEntity.status(403).body(Map.of("error", "No autorizado"));
+            }
+
+            return ResponseEntity.ok(pedido);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // Cancelar pedido
+    @PutMapping("/cancelar/{pedidoId}")
+    public ResponseEntity<?> cancelarPedido(@PathVariable Long pedidoId) {
+        try {
+            Pedido pedido = pedidoService.actualizarEstado(pedidoId, "CANCELADO");
+            return ResponseEntity.ok(Map.of(
+                    "mensaje", "Pedido cancelado exitosamente",
+                    "pedido", pedido
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ========== ENDPOINTS PARA ADMINISTRADORES ==========
+
+    @GetMapping("/admin/todos")
+    public ResponseEntity<?> obtenerTodosPedidos() {
+        List<Pedido> pedidos = pedidoService.obtenerTodosPedidos();
+        return ResponseEntity.ok(pedidos);
+    }
+
+    @PutMapping("/admin/estado/{pedidoId}")
+    public ResponseEntity<?> actualizarEstado(
+            @PathVariable Long pedidoId,
+            @RequestBody Map<String, String> request) {
+        try {
+            String nuevoEstado = request.get("estado");
+            Pedido pedido = pedidoService.actualizarEstado(pedidoId, nuevoEstado);
+            return ResponseEntity.ok(Map.of(
+                    "mensaje", "Estado actualizado a: " + nuevoEstado,
+                    "pedido", pedido
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/admin/estado/{estado}")
+    public ResponseEntity<?> obtenerPedidosPorEstado(@PathVariable String estado) {
+        List<Pedido> pedidos = pedidoService.obtenerPedidosPorEstado(estado);
+        return ResponseEntity.ok(pedidos);
+    }
+
+    private Usuario obtenerUsuarioActual() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+    }
+
+}
+
+ */
