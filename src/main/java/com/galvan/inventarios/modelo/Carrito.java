@@ -1,5 +1,6 @@
 package com.galvan.inventarios.modelo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +14,7 @@ public class Carrito {
 
     @OneToOne
     @JoinColumn(name = "usuario_id")
+    @JsonIgnore
     private Usuario usuario;
 
     @OneToMany(mappedBy = "carrito", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -20,39 +22,46 @@ public class Carrito {
 
     private Double total = 0.0;
 
+    // Constructor vacío (requerido por JPA)
+    public Carrito() {}
 
-    // Constructor vacío
-    public Carrito(long id, Usuario usuario,  List<CarritoItem> items, Double total) {
+    // Constructor con parámetros (corregido: Long, no long)
+    public Carrito(Long id, Usuario usuario, List<CarritoItem> items, Double total) {
         this.id = id;
         this.usuario = usuario;
         this.items = items;
         this.total = total;
-
     }
+
     // Getters y Setters
-    public Carrito() {}
     public Long getId() {
         return id;
     }
+
     public void setId(Long id) {
         this.id = id;
     }
+
     public Usuario getUsuario() {
         return usuario;
     }
+
     public void setUsuario(Usuario usuario) {
         this.usuario = usuario;
     }
+
     public List<CarritoItem> getItems() {
         return items;
     }
+
     public void setItems(List<CarritoItem> items) {
         this.items = items;
-
     }
+
     public Double getTotal() {
         return total;
     }
+
     public void setTotal(Double total) {
         this.total = total;
     }

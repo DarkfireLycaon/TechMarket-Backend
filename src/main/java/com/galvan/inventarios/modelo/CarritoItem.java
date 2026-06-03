@@ -1,6 +1,7 @@
 package com.galvan.inventarios.modelo;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "carrito_items")
@@ -11,6 +12,7 @@ public class CarritoItem {
 
     @ManyToOne
     @JoinColumn(name = "carrito_id")
+    @JsonIgnore
     private Carrito carrito;
 
     @ManyToOne

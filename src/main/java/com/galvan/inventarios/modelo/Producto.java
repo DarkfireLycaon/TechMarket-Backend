@@ -26,6 +26,10 @@ public class Producto {
     private Integer totalVendidos; // Contador de ventas
     private Boolean destacado = false; // Producto destacado en home
 
+    @OneToMany(mappedBy = "producto")
+    @JsonIgnore
+    private List<CarritoItem> carritoItems;
+
     @ManyToOne
     @JoinColumn(name = "usuario_id")
     private Usuario usuario;

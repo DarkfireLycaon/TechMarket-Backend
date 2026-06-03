@@ -3,25 +3,27 @@ package com.galvan.inventarios.controlador;
 import com.galvan.inventarios.dto.PedidoDTO;
 import com.galvan.inventarios.modelo.Pedido;
 import com.galvan.inventarios.modelo.Usuario;
-import com.galvan.inventarios.repositorio.UsuarioRepository;
+import com.galvan.inventarios.repositorio.UsuarioRepositorio;
+import com.galvan.inventarios.servicio.PedidoServicio;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 import java.util.Map;
 
-/*
+
  @RestController
  @RequestMapping("/api/pedidos")
  @CrossOrigin(origins = "http://localhost:4200")
 public class PedidoController {
 
     @Autowired
-    private PedidoService pedidoService;
+    private PedidoServicio pedidoService;
 
     @Autowired
-    private UsuarioRepository usuarioRepository;
+    private UsuarioRepositorio usuarioRepository;
 
     // Crear pedido
     @PostMapping("/crear")
@@ -29,12 +31,19 @@ public class PedidoController {
         try {
             Usuario usuario = obtenerUsuarioActual();
             Pedido pedido = pedidoService.crearPedido(usuario, pedidoDTO);
-            return ResponseEntity.ok(Map.of(
-                    "mensaje", "Pedido creado exitosamente",
-                    "pedido", pedido,
-                    "numeroSeguimiento", pedido.getNumeroSeguimiento()
-            ));
+
+            // Devolver solo los datos necesarios, no el objeto Pedido completo
+            Map<String, Object> response = new java.util.LinkedHashMap<>();
+            response.put("mensaje", "Pedido creado exitosamente");
+            response.put("pedidoId", pedido.getId());
+            response.put("numeroSeguimiento", pedido.getNumeroSeguimiento());
+            response.put("total", pedido.getTotal());
+            response.put("fecha", pedido.getFechaPedido());
+
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
+            System.err.println("Error al crear pedido: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
@@ -117,4 +126,3 @@ public class PedidoController {
 
 }
 
- */
