@@ -9,6 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import com.galvan.inventarios.dto.PedidoResumenDTO;
+import java.util.stream.Collectors;
 
 @Service
 public class PedidoServicio {
@@ -85,9 +87,9 @@ public class PedidoServicio {
         return nuevoPedido;
     }
 
-    // Obtener pedidos de un usuario
+
     public List<Pedido> obtenerPedidosUsuario(Usuario usuario) {
-        return pedidoRepository.findByUsuario(usuario);
+        return pedidoRepository.findByUsuarioIdOrderByFechaPedidoDesc(usuario.getId());
     }
 
     // Obtener pedido por ID
@@ -127,6 +129,64 @@ public class PedidoServicio {
     // Obtener pedidos por estado
     public List<Pedido> obtenerPedidosPorEstado(String estado) {
         return pedidoRepository.findByEstado(estado);
+    }
+    // Ejemplo en tu Servicio de Pedidos
+    public List<PedidoResumenDTO> obtenerMisPedidos(Long usuarioId) {
+        // 1. Obtenemos las entidades desde el repo
+        List<Pedido> pedidos = pedidoRepository.findByUsuarioIdOrderByFechaPedidoDesc(usuarioId);
+
+        // 2. Transformamos a DTO (esto es lo que evita el error de truncamiento de JSON)
+        return pedidos.stream()
+                .map(p -> new PedidoResumenDTO(
+                        p.getId(),
+                        p.getDireccionEnvio(),
+                        p.getMetodoPago(),
+                        p.getEstado(),
+                        p.getFechaPedido()
+                ))
+                .collect(Collectors.toList());
+    }
+    // 1. Para el cliente (solo ve sus pedidos y datos resumidos)
+    public List<PedidoResumenDTO> obtenerPedidosPorUsuarioId(Long usuarioId) {
+        return pedidoRepository.findByUsuarioIdOrderByFechaPedidoDesc(usuarioId)
+                .stream()
+                .map(this::convertirAResumen)
+                .collect(Collectors.toList());
+    }
+
+    // 2. Para el Admin (ve todos los pedidos, quizás con más detalle)
+    public List<PedidoResumenDTO> obtenerTodosPedidosResumen() {
+        return pedidoRepository.findAllByOrderByFechaPedidoDesc()
+                .stream()
+                .map(this::convertirAResumen)
+                .collect(Collectors.toList());
+    }
+
+    // Método privado para mantener el código limpio (evita repetir el map)
+    private PedidoResumenDTO convertirAResumen(Pedido p) {
+        return new PedidoResumenDTO(
+                p.getId(),
+                p.getDireccionEnvio(),
+                p.getMetodoPago(),
+                p.getEstado(),
+                p.getFechaPedido()
+        );
+    }
+    // En PedidoServicio.java
+
+    public PedidoResumenDTO obtenerPedidoDTO(Long pedidoId) {
+        // 1. Buscamos la entidad original
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new RuntimeException("Pedido no encontrado"));
+
+        // 2. Convertimos a DTO manualmente para evitar la recursividad
+        return new PedidoResumenDTO(
+                pedido.getId(),
+                pedido.getDireccionEnvio(),
+                pedido.getMetodoPago(),
+                pedido.getEstado(),
+                pedido.getFechaPedido()
+        );
     }
 }
 

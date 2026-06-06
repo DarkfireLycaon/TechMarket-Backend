@@ -1,6 +1,7 @@
 package com.galvan.inventarios.controlador;
 
 import com.galvan.inventarios.dto.PedidoDTO;
+import com.galvan.inventarios.dto.PedidoResumenDTO;
 import com.galvan.inventarios.modelo.Pedido;
 import com.galvan.inventarios.modelo.Usuario;
 import com.galvan.inventarios.repositorio.UsuarioRepositorio;
@@ -9,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import com.galvan.inventarios.servicio.PaypalServicio;
 
 import java.util.List;
 import java.util.Map;
@@ -48,40 +50,35 @@ public class PedidoController {
         }
     }
 
+
     // Obtener mis pedidos
     @GetMapping("/mis-pedidos")
     public ResponseEntity<?> obtenerMisPedidos() {
         Usuario usuario = obtenerUsuarioActual();
-        List<Pedido> pedidos = pedidoService.obtenerPedidosUsuario(usuario);
+        // AHORA: Llamamos al servicio que devuelve el DTO (a prueba de bucles circulares)
+        List<PedidoResumenDTO> pedidos = pedidoService.obtenerMisPedidos(usuario.getId());
+
         return ResponseEntity.ok(pedidos);
     }
 
-    // Obtener detalle de un pedido
-    @GetMapping("/{pedidoId}")
-    public ResponseEntity<?> obtenerPedido(@PathVariable Long pedidoId) {
-        try {
-            Pedido pedido = pedidoService.obtenerPedido(pedidoId);
-            Usuario usuarioActual = obtenerUsuarioActual();
 
-            // Verificar que el pedido pertenezca al usuario o sea admin
-            if (!pedido.getUsuario().getId().equals(usuarioActual.getId())) {
-                return ResponseEntity.status(403).body(Map.of("error", "No autorizado"));
-            }
 
-            return ResponseEntity.ok(pedido);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
+     // Y corrige también el detalle de pedido (si devuelves 'pedido' completo, habrá recursividad)
+     @GetMapping("/{pedidoId}")
+     public ResponseEntity<?> obtenerPedido(@PathVariable Long pedidoId) {
+         // Si quieres evitar el error, mapea esto a un DTO detallado
+         return ResponseEntity.ok(pedidoService.obtenerPedidoDTO(pedidoId));
+     }
 
     // Cancelar pedido
     @PutMapping("/cancelar/{pedidoId}")
     public ResponseEntity<?> cancelarPedido(@PathVariable Long pedidoId) {
         try {
-            Pedido pedido = pedidoService.actualizarEstado(pedidoId, "CANCELADO");
+            pedidoService.actualizarEstado(pedidoId, "CANCELADO");
+
+            // Respuesta simple y segura
             return ResponseEntity.ok(Map.of(
-                    "mensaje", "Pedido cancelado exitosamente",
-                    "pedido", pedido
+                    "mensaje", "Pedido cancelado exitosamente"
             ));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -90,11 +87,12 @@ public class PedidoController {
 
     // ========== ENDPOINTS PARA ADMINISTRADORES ==========
 
-    @GetMapping("/admin/todos")
-    public ResponseEntity<?> obtenerTodosPedidos() {
-        List<Pedido> pedidos = pedidoService.obtenerTodosPedidos();
-        return ResponseEntity.ok(pedidos);
-    }
+     // Ejemplo para todos los endpoints, no solo mis-pedidos
+     @GetMapping("/admin/todos")
+     public ResponseEntity<List<PedidoResumenDTO>> obtenerTodosPedidos() {
+         // Debes crear este método en PedidoServicio igual que hiciste con obtenerMisPedidos
+         return ResponseEntity.ok(pedidoService.obtenerTodosPedidosResumen());
+     }
 
     @PutMapping("/admin/estado/{pedidoId}")
     public ResponseEntity<?> actualizarEstado(
@@ -123,6 +121,66 @@ public class PedidoController {
         return usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
     }
+     @Autowired
+     private PaypalServicio paypalServicio;
 
+     // Endpoint 1: Iniciar Pago en PayPal
+     @PostMapping("/{pedidoId}/pagar-paypal")
+     public ResponseEntity<?> iniciarPagoPaypal(@PathVariable Long pedidoId) {
+         try {
+             Pedido pedido = pedidoService.obtenerPedido(pedidoId);
+
+             // Verificación de seguridad
+             Usuario usuarioActual = obtenerUsuarioActual();
+             if (!pedido.getUsuario().getId().equals(usuarioActual.getId())) {
+                 return ResponseEntity.status(403).body(Map.of("error", "No autorizado"));
+             }
+
+             // Crear orden en PayPal
+             com.paypal.orders.Order paypalOrder = paypalServicio.crearOrdenPaypal(pedido.getTotal(), pedido.getId());
+
+             // Buscar la URL a la que Angular debe redirigir al usuario para que pague
+             String approveUrl = paypalOrder.links().stream()
+                     .filter(link -> link.rel().equals("approve"))
+                     .findFirst()
+                     .orElseThrow(() -> new RuntimeException("No se encontró la URL de aprobación"))
+                     .href();
+
+             return ResponseEntity.ok(Map.of(
+                     "paypalOrderId", paypalOrder.id(),
+                     "redirectUrl", approveUrl
+             ));
+         } catch (Exception e) {
+             return ResponseEntity.badRequest().body(Map.of("error", "Error con PayPal: " + e.getMessage()));
+         }
+     }
+
+     // Endpoint 2: Confirmar y capturar el dinero tras el pago del cliente
+     @PostMapping("/capturar-paypal")
+     public ResponseEntity<?> capturarPagoPaypal(@RequestBody Map<String, String> body) {
+         try {
+             String token = body.get("token"); // ID de la orden de PayPal recibido de Angular
+             Long pedidoId = Long.parseLong(body.get("pedidoId"));
+
+             // Capturar el dinero desde el servidor de PayPal
+             com.paypal.orders.Order order = paypalServicio.capturarPago(token);
+
+             if ("COMPLETED".equals(order.status())) {
+                 // Actualizar tu base de datos mediante tu servicio existente
+                 pedidoService.actualizarEstado(pedidoId, "PAGADO");
+
+                 // Opcional: registrar el método de pago explícito si no venía en el DTO
+                 Pedido pedido = pedidoService.obtenerPedido(pedidoId);
+                 pedido.setMetodoPago("PAYPAL");
+                 // Nota: Asegúrate de guardar los cambios del pedido si tu método actualizarEstado no lo hace ya por dentro
+
+                 return ResponseEntity.ok(Map.of("mensaje", "Pago procesado y pedido completado con éxito"));
+             } else {
+                 return ResponseEntity.badRequest().body(Map.of("error", "El estado del pago en PayPal no es COMPLETED"));
+             }
+         } catch (Exception e) {
+             return ResponseEntity.badRequest().body(Map.of("error", "Fallo al capturar pago: " + e.getMessage()));
+         }
+     }
 }
 

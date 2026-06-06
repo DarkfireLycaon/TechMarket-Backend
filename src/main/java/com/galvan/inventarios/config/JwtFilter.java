@@ -44,8 +44,15 @@ public class JwtFilter extends OncePerRequestFilter {
                 System.out.println("📌 Email extraído del token: " + username);
 
                 // 2. Validar el token
+                // ... dentro de tu bloque if (authorizationHeader != null) ...
                 boolean tokenValido = jwtUtils.validarToken(jwt);
                 System.out.println("📌 Token válido: " + tokenValido);
+
+                if (tokenValido) {
+                    username = jwtUtils.getEmailFromToken(jwt);
+                } else {
+                    System.out.println("⚠️ EL TOKEN ES INVÁLIDO Y SE ESTÁ RECHAZANDO");
+                }
 
             } catch (Exception e) {
                 System.out.println("❌ Error procesando token: " + e.getMessage());

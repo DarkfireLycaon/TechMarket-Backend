@@ -8,14 +8,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-import com.galvan.inventarios.config.JwtUtils; // <--- ESTA LÍNEA ES LA CLAVE
+import com.galvan.inventarios.config.JwtUtils;
 import com.galvan.inventarios.repositorio.UsuarioRepositorio;
-import java.net.URI; // <--- ESTE FALTA PARA EL URI.create
+import java.net.URI;
+import java.security.Principal; // <--- OBLIGATORIO PARA IDENTIFICAR AL TOKEN JWT
 
-// IMPORTANTE: Estos imports faltaban en tu código
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+
 @RestController
 @RequestMapping("/auth")
 @CrossOrigin(origins = {"http://localhost:4200", "https://*.vercel.app"}, allowCredentials = "true")
@@ -33,20 +34,41 @@ public class AuthController {
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
 
+    // ✅ NUEVO ENDPOINT: Envía los datos guardados del perfil al checkout de Angular
+    @GetMapping("/perfil")
+    public ResponseEntity<?> obtenerPerfil(Principal principal) {
+        try {
+            if (principal == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("error", "No estás autenticado o el token expiró"));
+            }
+
+            // Sacamos el email que Spring extrajo del JWT de manera segura
+            String email = principal.getName();
+
+            return usuarioRepositorio.findByEmail(email)
+                    .map(usuario -> ResponseEntity.ok((Object) usuario))
+                    .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
+                            .body(Map.of("error", "Usuario inexistente")));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error al recuperar datos: " + e.getMessage()));
+        }
+    }
+
     @PostMapping("/registrar")
     public ResponseEntity<?> registrar(@RequestBody Usuario usuario) {
         try {
-            // Verificar si el usuario ya existe
             if (usuarioRepositorio.existsByEmail(usuario.getEmail())) {
                 return ResponseEntity
                         .badRequest()
                         .body(Map.of("mensaje", "El correo ya está registrado"));
             }
 
-            // Guardar el usuario
+            // Guardar el usuario completo en la Base de Datos
             usuarioService.registrar(usuario);
 
-            // ✅ IMPORTANTE: Devolver una respuesta 200 OK con mensaje
             return ResponseEntity
                     .ok()
                     .body(Map.of(
@@ -84,7 +106,6 @@ public class AuthController {
             usuarioService.generarTokenRecuperacion(email);
             return ResponseEntity.ok(Map.of("mensaje", "Si el correo existe, se ha enviado un enlace."));
         } catch (Exception e) {
-            // No revelamos si el correo existe o no por seguridad, pero logueamos el error
             return ResponseEntity.ok(Map.of("mensaje", "Proceso de recuperación iniciado."));
         }
     }
@@ -99,7 +120,6 @@ public class AuthController {
         }
     }
 
-    // Este es el que usa el link del correo de registro (opcional si usas código)
     @GetMapping("/confirmar")
     public ResponseEntity<?> confirmarCuenta(@RequestParam String token) {
         boolean activado = usuarioService.confirmarToken(token);
@@ -109,5 +129,41 @@ public class AuthController {
                     .build();
         }
         return ResponseEntity.badRequest().body("Token inválido o expirado");
+    }
+    // Agrega este endpoint dentro de tu AuthController.java
+
+    @PutMapping("/perfil")
+    public ResponseEntity<?> actualizarPerfil(@RequestBody Usuario datosActualizados, Principal principal) {
+        try {
+            if (principal == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("mensaje", "No estás autenticado o tu sesión expiró"));
+            }
+
+            // 1. Extraemos el email seguro del token
+            String email = principal.getName();
+
+            // 2. Buscamos al usuario actual en la base de datos
+            return usuarioRepositorio.findByEmail(email)
+                    .map(usuarioExistente -> {
+                        // 3. Modificamos únicamente los campos permitidos
+                        usuarioExistente.setNombre(datosActualizados.getNombre());
+                        usuarioExistente.setTelefono(datosActualizados.getTelefono());
+                        usuarioExistente.setCiudad(datosActualizados.getCiudad());
+                        usuarioExistente.setDireccion(datosActualizados.getDireccion());
+                        usuarioExistente.setCodigoPostal(datosActualizados.getCodigoPostal());
+
+                        // 4. Guardamos los cambios en la base de datos
+                        usuarioRepositorio.save(usuarioExistente);
+
+                        return ResponseEntity.ok(Map.of("mensaje", "Perfil actualizado con éxito"));
+                    })
+                    .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
+                            .body(Map.of("mensaje", "Usuario no encontrado en el sistema")));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("mensaje", "Error interno al actualizar: " + e.getMessage()));
+        }
     }
 }

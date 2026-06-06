@@ -1,7 +1,6 @@
 package com.galvan.inventarios.modelo;
 
 import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
 
 @Entity
@@ -9,7 +8,8 @@ public class Usuario {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column (nullable = false)
+
+    @Column(nullable = false)
     private String nombre;
 
     @Column(unique = true, nullable = false)
@@ -18,20 +18,34 @@ public class Usuario {
     @Column(nullable = false)
     private String password;
 
-    private boolean enabled = false; // Solo pasa a true al confirmar email
-    private String codigoConfirmacion; // Código que enviaremos por mail
+    // --- NUEVOS ATRIBUTOS INTEGRADOS ---
+    @Column(nullable = false)
+    private String telefono;
+
+    @Column(nullable = false)
+    private String city; // Mapeado en español como 'ciudad' en el getter/setter para Angular
+
+    private String direccion; // Opcional (Permite null en BD)
+
+    private String codigoPostal; // Opcional (Permite null en BD)
+    // ------------------------------------
+
+    private boolean enabled = false;
+    private String codigoConfirmacion;
     private String resetToken;
     private LocalDateTime tokenExpiration;
 
     public Usuario() {}
 
-    public Usuario(String nombre, String email, String password, String codigoConfirmacion) {
+    public Usuario(String nombre, String email, String password, String codigoConfirmacion, String telefono, String ciudad) {
         this.nombre = nombre;
         this.email = email;
         this.password = password;
         this.codigoConfirmacion = codigoConfirmacion;
-
+        this.telefono = telefono;
+        this.city = ciudad;
     }
+
     public Long getId() {
         return id;
     }
@@ -81,4 +95,29 @@ public class Usuario {
         this.nombre = nombre;
     }
 
+    // Getters y Setters de los nuevos campos
+    public String getTelefono() {
+        return telefono;
+    }
+    public void setTelefono(String telefono) {
+        this.telefono = telefono;
+    }
+    public String getCiudad() {
+        return city;
+    }
+    public void setCiudad(String ciudad) {
+        this.city = ciudad;
+    }
+    public String getDireccion() {
+        return direccion;
+    }
+    public void setDireccion(String direccion) {
+        this.direccion = direccion;
+    }
+    public String getCodigoPostal() {
+        return codigoPostal;
+    }
+    public void setCodigoPostal(String codigoPostal) {
+        this.codigoPostal = codigoPostal;
+    }
 }
