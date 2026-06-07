@@ -31,3 +31,14 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Archivos de configuración con secretos
+*.env
+config.json
+application-secret.properties
+.DS_Store
+
+# Carpetas de dependencias y builds (opcional, para mantener el repo limpio)
+node_modules/
+dist/
+.gradle/
