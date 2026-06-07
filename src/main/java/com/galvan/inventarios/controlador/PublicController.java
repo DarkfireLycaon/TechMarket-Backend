@@ -25,7 +25,7 @@ public class PublicController {
     }
 
     @GetMapping("/productos/{id}")
-    public Producto obtenerProducto(@PathVariable Integer id) {
+    public Producto obtenerProducto(@PathVariable Long id) {
         return productoRepositorio.findById(id).orElse(null);
     }
 }

@@ -32,7 +32,7 @@ public class CarritoController {
     public ResponseEntity<?> agregarProducto(@RequestBody Map<String, Object> request) {
         try {
             Usuario usuario = obtenerUsuarioActual();
-            Integer productoId = (Integer) request.get("productoId");
+            Long productoId = (Long) request.get("productoId");
             Integer cantidad = (Integer) request.get("cantidad");
 
             if (cantidad == null || cantidad <= 0) cantidad = 1;

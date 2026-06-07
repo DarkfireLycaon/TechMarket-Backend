@@ -35,6 +35,8 @@ public class SecurityConfig {
                         // Endpoints públicos (no requieren login)
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/api/productos/**").permitAll()
+                        .requestMatchers("/api/historial/**").permitAll()
                         // Endpoints protegidos (requieren login)
                         .requestMatchers("/api/carrito/**").authenticated()
                         .requestMatchers("/api/pedidos/**").authenticated()

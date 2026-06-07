@@ -29,7 +29,7 @@ public class CarritoService {
 
     // Agregar producto
     @Transactional
-    public Carrito agregarProducto(Usuario usuario, Integer productoId, Integer cantidad) {
+    public Carrito agregarProducto(Usuario usuario, Long productoId, Integer cantidad) {
         Carrito carrito = obtenerCarrito(usuario);
         Producto producto = productoRepositorio.findById(productoId)
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado"));

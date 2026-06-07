@@ -3,6 +3,7 @@ package com.galvan.inventarios.controlador;
 import com.galvan.inventarios.exepcion.RecursoNoEncontradoExepcion;
 import com.galvan.inventarios.modelo.Producto;
 import com.galvan.inventarios.modelo.Usuario; // Asegúrate de importar tu modelo
+import com.galvan.inventarios.repositorio.ProductoRepositorio;
 import com.galvan.inventarios.repositorio.UsuarioRepositorio; // Necesario para buscar al dueño
 import com.galvan.inventarios.servicio.ProductoService;
 import org.slf4j.Logger;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
+@RequestMapping("/api")
 @CrossOrigin(origins = {"http://localhost:4200", "https://*.vercel.app"}, allowCredentials = "true")
 
 public class ProductoControlador {
@@ -27,15 +29,16 @@ public class ProductoControlador {
 
     @Autowired
     private UsuarioRepositorio usuarioRepositorio; // Lo usamos para obtener el ID del usuario actual
-
+    @Autowired
+    private ProductoRepositorio productoRepositorio;
     @GetMapping("/productos")
     public List<Producto> obtenerProdutos(Authentication authentication) {
         // 1. Sacamos el email del token
         String email = authentication.getName();
-        Usuario usuario = usuarioRepository.findByEmail(email).orElseThrow();
+        Usuario usuario = usuarioRepositorio.findByEmail(email).orElseThrow();
 
         // 2. Filtramos: Necesitas crear este método en tu Service/Repository
-        List<Producto> productos = this.productoService.listarProductosPorUsuario(usuario.getId());
+        List<Producto> productos = this.productoRepositorio.listarProductosPorUsuario(usuario.getId());
 
         LOG.info("Productos obtenidos para el usuario: " + email);
         return productos;
@@ -45,7 +48,7 @@ public class ProductoControlador {
     public Producto agregarProducto(@RequestBody Producto producto, Authentication authentication) {
         // 1. Obtenemos el usuario logueado
         String email = authentication.getName();
-        Usuario usuario = usuarioRepository.findByEmail(email).orElseThrow();
+        Usuario usuario = usuarioRepositorio.findByEmail(email).orElseThrow();
 
         // 2. Le asignamos el dueño al producto antes de guardar
         producto.setUsuario(usuario);
@@ -55,7 +58,7 @@ public class ProductoControlador {
     }
 
     @GetMapping("/productos/{id}")
-    public ResponseEntity<Producto> obtenerProductoPorId(@PathVariable Integer id, Authentication authentication) {
+    public ResponseEntity<Producto> obtenerProductoPorId(@PathVariable Long id, Authentication authentication) {
         Producto producto = this.productoService.buscarProductoPorId(id);
 
         // SEGURIDAD: Validar que el producto existe Y pertenece al usuario logueado
@@ -66,7 +69,7 @@ public class ProductoControlador {
 
     @PutMapping("/productos/{id}")
     public ResponseEntity<Producto> actualizarProducto(
-            @PathVariable int id,
+            @PathVariable Long id,
             @RequestBody Producto productoRecibido,
             Authentication authentication) {
 
@@ -85,7 +88,7 @@ public class ProductoControlador {
     }
 
     @DeleteMapping("/productos/{id}")
-    public ResponseEntity<Map<String, Boolean>> eliminarProducto(@PathVariable Integer id, Authentication authentication) {
+    public ResponseEntity<Map<String, Boolean>> eliminarProducto(@PathVariable Long id, Authentication authentication) {
         Producto producto = this.productoService.buscarProductoPorId(id);
 
         // SEGURIDAD: Solo el dueño puede borrar
@@ -107,4 +110,5 @@ public class ProductoControlador {
             throw new RuntimeException("No tienes permiso para acceder a este recurso");
         }
     }
+
 }

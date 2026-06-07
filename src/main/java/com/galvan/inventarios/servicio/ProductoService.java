@@ -17,8 +17,8 @@ public class ProductoService implements IProductoServicio {
          return this.productoRepositorio.findAll();
     }
 
-    @Override
-    public Producto buscarProductoPorId(Integer idProducto) {
+
+    public Producto buscarProductoPorId(Long idProducto) {
         Producto producto = this.productoRepositorio.findById(idProducto).orElse(null);
         return producto;
     }
@@ -29,7 +29,7 @@ public class ProductoService implements IProductoServicio {
     }
 
     @Override
-    public void eliminarProducto(Integer idProducto) {
+    public void eliminarProducto(Long idProducto) {
      this.productoRepositorio.deleteById(idProducto);
     }
 
