@@ -33,7 +33,7 @@ build/
 .vscode/
 
 # Archivos de configuración con secretos
-*.env
+.env
 config.json
 application-secret.properties
 .DS_Store
