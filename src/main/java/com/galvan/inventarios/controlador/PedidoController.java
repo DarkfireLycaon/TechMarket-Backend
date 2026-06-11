@@ -6,12 +6,14 @@ import com.galvan.inventarios.modelo.Pedido;
 import com.galvan.inventarios.modelo.Usuario;
 import com.galvan.inventarios.repositorio.UsuarioRepositorio;
 import com.galvan.inventarios.servicio.PedidoServicio;
+import com.galvan.inventarios.servicio.ProductoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import com.galvan.inventarios.servicio.PaypalServicio;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,6 +28,9 @@ public class PedidoController {
 
     @Autowired
     private UsuarioRepositorio usuarioRepository;
+
+    @Autowired
+    private ProductoService productoService;
 
     // Crear pedido
     @PostMapping("/crear")
@@ -56,7 +61,7 @@ public class PedidoController {
     public ResponseEntity<?> obtenerMisPedidos() {
         Usuario usuario = obtenerUsuarioActual();
         // AHORA: Llamamos al servicio que devuelve el DTO (a prueba de bucles circulares)
-        List<PedidoResumenDTO> pedidos = pedidoService.obtenerMisPedidos(usuario.getId());
+        List<PedidoDTO> pedidos = pedidoService.obtenerMisPedidos(usuario.getId());
 
         return ResponseEntity.ok(pedidos);
     }
@@ -89,7 +94,7 @@ public class PedidoController {
 
      // Ejemplo para todos los endpoints, no solo mis-pedidos
      @GetMapping("/admin/todos")
-     public ResponseEntity<List<PedidoResumenDTO>> obtenerTodosPedidos() {
+     public ResponseEntity<List<PedidoDTO>> obtenerTodosPedidos() {
          // Debes crear este método en PedidoServicio igual que hiciste con obtenerMisPedidos
          return ResponseEntity.ok(pedidoService.obtenerTodosPedidosResumen());
      }
@@ -182,5 +187,22 @@ public class PedidoController {
              return ResponseEntity.badRequest().body(Map.of("error", "Fallo al capturar pago: " + e.getMessage()));
          }
      }
+     public Map<String, Object> obtenerResumenVentas() {
+         Map<String, Object> resumen = new HashMap<>();
+
+         // 1. Total ventas (Suma de los totales de pedidos)
+         Double total = pedidoService.sumarTotalVentas();
+         resumen.put("totalVentas", total != null ? total : 0.0);
+
+         // 2. Cantidad total de pedidos
+         resumen.put("cantidadPedidos", pedidoService.count());
+
+         // 3. Ventas por día (últimos 7 días) - Esto requiere una lógica de agrupación
+         // Aquí podrías llamar a un método que retorne una lista de objetos con fecha y suma
+         resumen.put("ventasUltimos7Dias", pedidoService.findVentasUltimos7Dias());
+
+         return resumen;
+     }
+
 }
 

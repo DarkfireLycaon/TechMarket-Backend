@@ -34,6 +34,8 @@ public class Usuario {
     private String codigoConfirmacion;
     private String resetToken;
     private LocalDateTime tokenExpiration;
+    @Column(name = "is_admin", nullable = false)
+    private boolean isAdmin = false;
 
     public Usuario() {}
 
@@ -119,5 +121,12 @@ public class Usuario {
     }
     public void setCodigoPostal(String codigoPostal) {
         this.codigoPostal = codigoPostal;
+    }
+    public boolean getIsAdmin() {
+        return isAdmin;
+    }
+
+    public void setAdmin(boolean isAdmin) {
+        this.isAdmin = isAdmin;
     }
 }

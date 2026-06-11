@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication; // IMPORTANTE
 import org.springframework.web.bind.annotation.*;
-
+import com.galvan.inventarios.dto.OfertaDTO;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,19 +57,26 @@ public class ProductoControlador {
         return this.productoService.guardarProducto(producto);
     }
 
+    // 1. RUTA DE BÚSQUEDA (Debe ir primero para evitar colisiones con {id})
+    // Se eliminó la Authentication para permitir acceso público
+    @GetMapping("/productos/search")
+    public ResponseEntity<List<Producto>> buscarProductos(@RequestParam("q") String query) {
+        LOG.info("Buscando productos con término: " + query);
+        List<Producto> productos = productoService.buscarPorNombre(query);
+        return ResponseEntity.ok(productos);
+    }
+
+    // 2. RUTA DE DETALLE (Ahora, si pones /productos/123, NO chocará con /productos/search)
     @GetMapping("/productos/{id}")
-    public ResponseEntity<Producto> obtenerProductoPorId(@PathVariable Long id, Authentication authentication) {
+    public ResponseEntity<Producto> obtenerProductoPorId(@PathVariable Integer id, Authentication authentication) {
         Producto producto = this.productoService.buscarProductoPorId(id);
-
-        // SEGURIDAD: Validar que el producto existe Y pertenece al usuario logueado
         validarPropiedad(producto, authentication);
-
         return ResponseEntity.ok(producto);
     }
 
     @PutMapping("/productos/{id}")
     public ResponseEntity<Producto> actualizarProducto(
-            @PathVariable Long id,
+            @PathVariable Integer id,
             @RequestBody Producto productoRecibido,
             Authentication authentication) {
 
@@ -88,7 +95,7 @@ public class ProductoControlador {
     }
 
     @DeleteMapping("/productos/{id}")
-    public ResponseEntity<Map<String, Boolean>> eliminarProducto(@PathVariable Long id, Authentication authentication) {
+    public ResponseEntity<Map<String, Boolean>> eliminarProducto(@PathVariable Integer id, Authentication authentication) {
         Producto producto = this.productoService.buscarProductoPorId(id);
 
         // SEGURIDAD: Solo el dueño puede borrar
@@ -102,13 +109,40 @@ public class ProductoControlador {
 
     // Método auxiliar para evitar que un usuario manipule IDs de otros
     private void validarPropiedad(Producto producto, Authentication authentication) {
-        if (producto == null) {
-            throw new RecursoNoEncontradoExepcion("Producto no encontrado");
+        // 1. Verificar si el usuario conectado tiene el rol de ADMIN
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ADMIN"));
+
+        // 🌟 Si es Administrador, saltamos la validación. ¡Tiene superpoderes!
+        if (isAdmin) {
+            return;
         }
+
+        // 2. Si NO es admin, se aplica la regla estricta para usuarios comunes
         String emailLogueado = authentication.getName();
-        if (!producto.getUsuario().getEmail().equals(emailLogueado)) {
-            throw new RuntimeException("No tienes permiso para acceder a este recurso");
+
+        if (producto.getUsuario() == null || !producto.getUsuario().getEmail().equals(emailLogueado)) {
+            throw new RuntimeException("No tienes permiso para acceder a este recurso"); // Línea 110
         }
+    }
+    @PatchMapping("/{id}/toggle-oferta")
+    public ResponseEntity<Producto> toggleOferta(
+            @PathVariable Integer id,
+            @RequestBody OfertaDTO ofertaDTO) {
+
+        Producto producto = productoService.actualizarEstadoOferta(
+                id,
+                ofertaDTO.getEsOferta(),
+                ofertaDTO.getPrecioOferta()
+        );
+
+        return ResponseEntity.ok(producto);
+    }
+    @GetMapping("/productos/ofertas")
+    public List<Producto> obtenerProductosEnOferta() {
+        // Nota: Aquí no usamos Authentication porque las ofertas
+        // usualmente son públicas para todos los usuarios.
+        return productoService.getOfertas();
     }
 
 }

@@ -20,7 +20,8 @@ public class Producto {
     private String categoria; // ELECTRONICA, HOGAR, TELEFONIA, INFORMATICA, GAMING
     private String marca;
     private Boolean disponible = true;
-
+    private Boolean esOferta = false; // Indica si está en oferta
+    private Double precioOferta;
     // Nuevos campos para el marketplace
     private Double calificacion;  // Promedio de calificaciones (0-5)
     private Integer totalVendidos; // Contador de ventas
@@ -179,6 +180,20 @@ public class Producto {
 
     public void setUsuario(Usuario usuario) {
         this.usuario = usuario;
+    }
+
+    public Boolean getEsOferta() {
+        return esOferta;
+    }
+    public void setEsOferta(Boolean esOferta) {
+        this.esOferta = esOferta;
+    }
+
+    public Double getPrecioOferta() {
+        return precioOferta;
+    }
+    public void setPrecioOferta(Double precioOferta) {
+        this.precioOferta = precioOferta;
     }
 
     // Método para reducir stock cuando se compra

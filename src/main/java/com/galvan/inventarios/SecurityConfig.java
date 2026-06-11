@@ -31,15 +31,24 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
+                        // 1. Permisos globales básicos
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        // Endpoints públicos (no requieren login)
-                        .requestMatchers("/api/public/**").permitAll()
-                        .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/api/productos/**").permitAll()
-                        .requestMatchers("/api/historial/**").permitAll()
-                        // Endpoints protegidos (requieren login)
-                        .requestMatchers("/api/carrito/**").authenticated()
-                        .requestMatchers("/api/pedidos/**").authenticated()
+                        .requestMatchers("/api/public/**", "/auth/**", "/api/auth/**").permitAll()
+                        .requestMatchers("/api/productos/search", "/api/productos/ofertas").permitAll()
+
+                        // 2. Lectura de productos permitida para todos
+                        .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
+
+                        // 3. Rutas exclusivas para ADMIN
+                        .requestMatchers(HttpMethod.POST, "/api/productos/**").hasAuthority("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/productos/**").hasAuthority("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/productos/**").hasAuthority("ADMIN")
+                        .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+
+                        // 4. Rutas protegidas para usuarios registrados
+                        .requestMatchers("/api/carrito/**", "/api/pedidos/**").authenticated()
+
+                        // 5. Cierre único y final
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

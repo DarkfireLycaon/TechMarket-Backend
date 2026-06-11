@@ -25,7 +25,16 @@ public class PublicController {
     }
 
     @GetMapping("/productos/{id}")
-    public Producto obtenerProducto(@PathVariable Long id) {
+    public Producto obtenerProducto(@PathVariable Integer id) {
         return productoRepositorio.findById(id).orElse(null);
     }
+
+
+
+    @GetMapping("/productos/ofertas")
+    public List<Producto> listarProductosEnOferta() {
+        // Asumiendo que tienes un método en el repo que filtra por esOferta
+        return productoRepositorio.findByEsOfertaTrue();    }
+
+
 }

@@ -40,7 +40,7 @@ public class ProveedorServicio implements IProveedorServicio {
 
     public Proveedor agregarProductoAProveedor(
             Integer proveedorId,
-            Long productoId,
+            Integer productoId,
             Long usuarioId) { // Pasamos el ID del usuario logueado
 
         Proveedor proveedor = proveedorRepositorio.findById(proveedorId)

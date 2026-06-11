@@ -9,10 +9,13 @@ import java.util.List;
 
 @Repository
 
-public interface ProductoRepositorio extends JpaRepository<Producto, Long> {
+public interface ProductoRepositorio extends JpaRepository<Producto, Integer> {
     List<Producto> findByDisponibleTrue();
     List<Producto> findByCategoriaAndDisponibleTrue(String categoria);
     List<Producto> findByUsuarioId(Long usuarioId);
     @Query("SELECT p FROM Producto p WHERE p.usuario.id = :usuarioId")
     List<Producto> listarProductosPorUsuario(@Param("usuarioId") Long usuarioId);
+    List<Producto> findByEsOfertaTrue();
+    List<Producto> findByNombreContainingIgnoreCase(String nombre);
+    Long countByStockLessThan(Integer stock);
 }

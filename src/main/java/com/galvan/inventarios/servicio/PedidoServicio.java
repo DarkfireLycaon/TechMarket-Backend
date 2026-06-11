@@ -4,12 +4,15 @@ import com.galvan.inventarios.dto.PedidoDTO;
 import com.galvan.inventarios.modelo.*;
 import com.galvan.inventarios.repositorio.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
-import com.galvan.inventarios.dto.PedidoResumenDTO;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,10 +30,15 @@ public class PedidoServicio {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-    // Crear pedido a partir del carrito
+    // ==========================================================================
+    // LÓGICA DE NEGOCIO (ENTIDADES PURAS)
+    // ==========================================================================
+
+    /**
+     * Crear pedido a partir del carrito de compras actual del usuario
+     */
     @Transactional
     public Pedido crearPedido(Usuario usuario, PedidoDTO pedidoDTO) {
-        // Obtener carrito del usuario
         Carrito carrito = carritoRepository.findByUsuario(usuario)
                 .orElseThrow(() -> new RuntimeException("Carrito vacío"));
 
@@ -38,7 +46,6 @@ public class PedidoServicio {
             throw new RuntimeException("No hay productos en el carrito");
         }
 
-        // Crear el pedido
         Pedido pedido = new Pedido();
         pedido.setUsuario(usuario);
         pedido.setFechaPedido(LocalDateTime.now());
@@ -49,20 +56,16 @@ public class PedidoServicio {
 
         double total = 0.0;
 
-        // Convertir items del carrito a items del pedido
         for (CarritoItem carritoItem : carrito.getItems()) {
             Producto producto = carritoItem.getProducto();
 
-            // Verificar stock
             if (producto.getStock() < carritoItem.getCantidad()) {
                 throw new RuntimeException("Stock insuficiente para: " + producto.getNombre());
             }
 
-            // Reducir stock
             producto.reducirStock(carritoItem.getCantidad());
             productoRepository.save(producto);
 
-            // Crear item del pedido
             PedidoItem pedidoItem = new PedidoItem();
             pedidoItem.setPedido(pedido);
             pedidoItem.setProducto(producto);
@@ -75,11 +78,8 @@ public class PedidoServicio {
         }
 
         pedido.setTotal(total);
-
-        // Guardar pedido
         Pedido nuevoPedido = pedidoRepository.save(pedido);
 
-        // Vaciar carrito
         carrito.getItems().clear();
         carrito.setTotal(0.0);
         carritoRepository.save(carrito);
@@ -87,24 +87,27 @@ public class PedidoServicio {
         return nuevoPedido;
     }
 
-
     public List<Pedido> obtenerPedidosUsuario(Usuario usuario) {
         return pedidoRepository.findByUsuarioIdOrderByFechaPedidoDesc(usuario.getId());
     }
 
-    // Obtener pedido por ID
     public Pedido obtenerPedido(Long pedidoId) {
         return pedidoRepository.findById(pedidoId)
                 .orElseThrow(() -> new RuntimeException("Pedido no encontrado"));
     }
 
-    // Actualizar estado del pedido (para administradores)
+    public List<Pedido> obtenerPedidosPorEstado(String estado) {
+        return pedidoRepository.findByEstado(estado);
+    }
+
+    /**
+     * Actualizar estado del pedido (Devuelve stock si pasa a CANCELADO)
+     */
     @Transactional
     public Pedido actualizarEstado(Long pedidoId, String nuevoEstado) {
         Pedido pedido = obtenerPedido(pedidoId);
         pedido.setEstado(nuevoEstado);
 
-        // Si el pedido se cancela, devolver stock
         if (nuevoEstado.equals("CANCELADO") && !pedido.getEstado().equals("CANCELADO")) {
             for (PedidoItem item : pedido.getItems()) {
                 Producto producto = item.getProducto();
@@ -116,77 +119,110 @@ public class PedidoServicio {
         return pedidoRepository.save(pedido);
     }
 
-    // Generar número de seguimiento único
     private String generarNumeroSeguimiento() {
         return "INV-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 
-    // Obtener todos los pedidos (admin)
-    public List<Pedido> obtenerTodosPedidos() {
-        return pedidoRepository.findAll();
+
+    // ==========================================================================
+    // LÓGICA DE TRANSFERENCIA DE DATOS (MAPPING A DTOs PARA ANGULAR)
+    // ==========================================================================
+
+    /**
+     * Convertidor Centralizado: Mapea la entidad al DTO con los 8 campos requeridos
+     */
+    private PedidoDTO convertirAResumen(Pedido p) {
+        return new PedidoDTO(
+                p.getId(),
+                p.getDireccionEnvio(),
+                p.getMetodoPago(),
+                p.getEstado(),
+                p.getFechaPedido(),
+                p.getTotal(), // ✅ Agregado el total cobrado
+                p.getUsuario() != null ? p.getUsuario().getEmail() : "Usuario General", // ✅ Agregado el email del cliente de forma segura
+                p.getNumeroSeguimiento() // ✅ Agregado el número de tracking
+        );
     }
 
-    // Obtener pedidos por estado
-    public List<Pedido> obtenerPedidosPorEstado(String estado) {
-        return pedidoRepository.findByEstado(estado);
-    }
-    // Ejemplo en tu Servicio de Pedidos
-    public List<PedidoResumenDTO> obtenerMisPedidos(Long usuarioId) {
-        // 1. Obtenemos las entidades desde el repo
-        List<Pedido> pedidos = pedidoRepository.findByUsuarioIdOrderByFechaPedidoDesc(usuarioId);
-
-        // 2. Transformamos a DTO (esto es lo que evita el error de truncamiento de JSON)
-        return pedidos.stream()
-                .map(p -> new PedidoResumenDTO(
-                        p.getId(),
-                        p.getDireccionEnvio(),
-                        p.getMetodoPago(),
-                        p.getEstado(),
-                        p.getFechaPedido()
-                ))
-                .collect(Collectors.toList());
-    }
-    // 1. Para el cliente (solo ve sus pedidos y datos resumidos)
-    public List<PedidoResumenDTO> obtenerPedidosPorUsuarioId(Long usuarioId) {
+    /**
+     * Obtiene los pedidos resumidos de un cliente específico
+     */
+    public List<PedidoDTO> obtenerMisPedidos(Long usuarioId) {
         return pedidoRepository.findByUsuarioIdOrderByFechaPedidoDesc(usuarioId)
                 .stream()
                 .map(this::convertirAResumen)
                 .collect(Collectors.toList());
     }
 
-    // 2. Para el Admin (ve todos los pedidos, quizás con más detalle)
-    public List<PedidoResumenDTO> obtenerTodosPedidosResumen() {
-        return pedidoRepository.findAllByOrderByFechaPedidoDesc()
+    /**
+     * Alias compatible por si lo usas en otros controladores
+     */
+    public List<PedidoDTO> obtenerPedidosPorUsuarioId(Long usuarioId) {
+        return obtenerMisPedidos(usuarioId);
+    }
+
+    /**
+     * Obtiene el listado global de pedidos formateado a DTO para el Panel de Administrador
+     */
+    public List<PedidoDTO> obtenerTodosPedidosResumen() {
+        // Nota: Si tu repositorio no tiene 'findAllByOrderByFechaPedidoDesc', usa 'findAll()'
+        return pedidoRepository.findAll()
                 .stream()
                 .map(this::convertirAResumen)
                 .collect(Collectors.toList());
     }
 
-    // Método privado para mantener el código limpio (evita repetir el map)
-    private PedidoResumenDTO convertirAResumen(Pedido p) {
-        return new PedidoResumenDTO(
-                p.getId(),
-                p.getDireccionEnvio(),
-                p.getMetodoPago(),
-                p.getEstado(),
-                p.getFechaPedido()
-        );
-    }
-    // En PedidoServicio.java
-
-    public PedidoResumenDTO obtenerPedidoDTO(Long pedidoId) {
-        // 1. Buscamos la entidad original
+    /**
+     * Busca un único pedido mapeado directamente a DTO (Evita bucles infinitos en detalles)
+     */
+    public PedidoDTO obtenerPedidoDTO(Long pedidoId) {
         Pedido pedido = pedidoRepository.findById(pedidoId)
                 .orElseThrow(() -> new RuntimeException("Pedido no encontrado"));
 
-        // 2. Convertimos a DTO manualmente para evitar la recursividad
-        return new PedidoResumenDTO(
-                pedido.getId(),
-                pedido.getDireccionEnvio(),
-                pedido.getMetodoPago(),
-                pedido.getEstado(),
-                pedido.getFechaPedido()
-        );
+        return convertirAResumen(pedido);
+    }
+    /**
+     * Genera el resumen para el Dashboard de Administrador
+     */
+    public Map<String, Object> obtenerResumenParaDashboard() {
+        Map<String, Object> resumen = new HashMap<>();
+
+        // 1. Total ventas acumuladas
+        Double totalVentas = pedidoRepository.sumarTotalVentas();
+        resumen.put("totalVentas", totalVentas != null ? totalVentas : 0.0);
+
+        // 2. Pedidos pendientes
+        resumen.put("pedidosPendientes", pedidoRepository.countByEstado("PENDIENTE"));
+
+        // 3. Stock crítico (lo delegamos al repositorio de productos)
+        resumen.put("productosBajoStock", productoRepository.countByStockLessThan(5));
+
+        // 4. Usuarios totales
+        resumen.put("usuariosRegistrados", usuarioRepository.count());
+
+        // 5. Categoría más vendida (usando Pageable para obtener el primero)
+        // Dentro de tu metodo obtenerResumenParaDashboard()
+        List<String> topCat = pedidoRepository.findTopCategoria(PageRequest.of(0, 1));
+        resumen.put("categoriaTop", !topCat.isEmpty() ? topCat.get(0) : "Sin ventas");
+
+        // 6. Tendencia semanal
+        resumen.put("ventasUltimos7Dias", pedidoRepository.findVentasUltimos7Dias());
+
+        return resumen;
+    }
+    // 1. Total de ventas
+    public Double sumarTotalVentas() {
+        Double total = pedidoRepository.sumarTotalVentas();
+        return total != null ? total : 0.0;
+    }
+
+    // 2. Cantidad total de pedidos
+    public long count() {
+        return pedidoRepository.count();
+    }
+
+    // 3. Ventas por día (últimos 7 días)
+    public List<Object[]> findVentasUltimos7Dias() {
+        return pedidoRepository.findVentasUltimos7Dias();
     }
 }
-

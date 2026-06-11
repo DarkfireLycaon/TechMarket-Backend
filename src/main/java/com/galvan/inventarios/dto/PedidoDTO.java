@@ -1,24 +1,82 @@
 package com.galvan.inventarios.dto;
 
-import java.util.List;
+import java.time.LocalDateTime;
 
 public class PedidoDTO {
+    private Long pedidoId;
     private String direccionEnvio;
     private String metodoPago;
-    private String telefonoContacto;
-    private List<PedidoItemDTO> items;
+    private String estado;
+    private LocalDateTime fechaPedido;
+    // ⬇️ ¡AÑADE ESTOS 3 CAMPOS!
+    private Double total;
+    private String clienteEmail;
+    private String numeroSeguimiento;
 
-    // Getters y Setters
-    public String getDireccionEnvio() { return direccionEnvio; }
-    public void setDireccionEnvio(String direccionEnvio) { this.direccionEnvio = direccionEnvio; }
+    // CONSTRUCTOR ACTUALIZADO
+    public PedidoDTO(Long pedidoId, String direccionEnvio, String metodoPago,
+                            String estado, LocalDateTime fechaPedido, Double total,
+                            String clienteEmail, String numeroSeguimiento) {
+        this.pedidoId = pedidoId;
+        this.direccionEnvio = direccionEnvio;
+        this.metodoPago = metodoPago;
+        this.estado = estado;
+        this.fechaPedido = fechaPedido;
+        this.total = total;
+        this.clienteEmail = clienteEmail;
+        this.numeroSeguimiento = numeroSeguimiento;
+    }
 
-    public String getMetodoPago() { return metodoPago; }
-    public void setMetodoPago(String metodoPago) { this.metodoPago = metodoPago; }
+    // No olvides generar sus respectivos Getters y Setters aquí abajo...
+    public PedidoDTO() {}
 
-    public String getTelefonoContacto() { return telefonoContacto; }
-    public void setTelefonoContacto(String telefonoContacto) { this.telefonoContacto = telefonoContacto; }
+    public Long getPedidoId() {
+        return pedidoId;
+    }
+    public void setPedidoId(Long pedidoId) {
+        this.pedidoId = pedidoId;
+    }
+    public String getDireccionEnvio() {
+        return direccionEnvio;
+    }
+    public void setDireccionEnvio(String direccionEnvio) {
+        this.direccionEnvio = direccionEnvio;
+    }
+    public String getMetodoPago() {
+        return metodoPago;
+    }
+    public void setMetodoPago(String metodoPago) {
+        this.metodoPago = metodoPago;
+    }
+    public String getEstado() {
+        return estado;
+    }
+    public void setEstado(String estado) {
+        this.estado = estado;
+    }
+    public LocalDateTime getFechaPedido() {
+        return fechaPedido;
+    }
+    public void setFechaPedido(LocalDateTime fechaPedido) {
+        this.fechaPedido = fechaPedido;
+    }
+    public Double getTotal() {
+        return total;
+    }
+    public void setTotal(Double total) {
+        this.total = total;
+    }
+    public String getClienteEmail() {
+        return clienteEmail;
+    }
+    public void setClienteEmail(String clienteEmail) {
+        this.clienteEmail = clienteEmail;
+    }
+    public String getNumeroSeguimiento() {
+        return numeroSeguimiento;
+    }
+    public void setNumeroSeguimiento(String numeroSeguimiento) {
+        this.numeroSeguimiento = numeroSeguimiento;
+    }
 
-    public List<PedidoItemDTO> getItems() { return items; }
-    public void setItems(List<PedidoItemDTO> items) { this.items = items; }
 }
-

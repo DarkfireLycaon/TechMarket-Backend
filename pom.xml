@@ -90,6 +90,11 @@
             <artifactId>sendgrid-java</artifactId>
             <version>4.10.3</version>
         </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
     <build>

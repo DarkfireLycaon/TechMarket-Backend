@@ -14,6 +14,7 @@ import java.net.URI;
 import java.security.Principal; // <--- OBLIGATORIO PARA IDENTIFICAR AL TOKEN JWT
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -90,10 +91,19 @@ public class AuthController {
                     if (!usuario.isEnabled()) {
                         return ResponseEntity.badRequest().body(Collections.singletonMap("error", "Debes confirmar tu cuenta primero."));
                     }
+
                     if (passwordEncoder.matches(loginRequest.getPassword(), usuario.getPassword())) {
                         String token = jwtUtils.generarToken(usuario.getEmail());
-                        return ResponseEntity.ok(Collections.singletonMap("token", token));
+
+                        // Creamos la respuesta con todos los datos requeridos por Angular
+                        Map<String, Object> respuestaExito = new HashMap<>();
+                        respuestaExito.put("token", token);
+                        respuestaExito.put("nombre", usuario.getNombre());
+                        respuestaExito.put("isAdmin", usuario.getIsAdmin()); // Mapea el booleano real de la BD
+
+                        return ResponseEntity.ok(respuestaExito);
                     }
+
                     return ResponseEntity.status(401).body(Collections.singletonMap("error", "Credenciales inválidas."));
                 })
                 .orElse(ResponseEntity.status(401).body(Collections.singletonMap("error", "Usuario no encontrado.")));

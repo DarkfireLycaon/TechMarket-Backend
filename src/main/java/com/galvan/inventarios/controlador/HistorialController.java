@@ -25,7 +25,7 @@ public class HistorialController {
     private ProductoRepositorio productoRepositorio; // Necesario para obtener el producto
 
     @PostMapping("/visita/{productoId}")
-    public ResponseEntity<?> registrarVisita(@PathVariable Long productoId) {
+    public ResponseEntity<?> registrarVisita(@PathVariable Integer productoId) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         Usuario usuario = usuarioRepositorio.findByEmail(username).orElseThrow(); // Asumiendo que usas email como identificador
         Producto producto = productoRepositorio.findById(productoId).orElseThrow();
