@@ -17,7 +17,7 @@ public class Carrito {
     @JsonIgnore
     private Usuario usuario;
 
-    @OneToMany(mappedBy = "carrito", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "carrito", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<CarritoItem> items = new ArrayList<>();
 
     private Double total = 0.0;
@@ -64,5 +64,11 @@ public class Carrito {
 
     public void setTotal(Double total) {
         this.total = total;
+    }
+
+    // En Carrito.java
+    public void addItem(CarritoItem item) {
+        items.add(item);
+        item.setCarrito(this); // Esto asegura que carrito_id nunca sea NULL
     }
 }

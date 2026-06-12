@@ -38,9 +38,9 @@ public class UsuarioServicio {
         Usuario guardado = usuarioRepositorio.save(usuario);
 
         // ✅ Enviar correo de confirmación con SendGrid
-        sendGridApiService.enviarCorreoConfirmacion(guardado.getEmail(), codigo);
-
+        emailService.enviarCorreoConfirmacion(usuario.getEmail(), usuario.getNombre(), codigo);
         return guardado;
+
     }
 
     public void generarTokenRecuperacion(String email) {

@@ -134,8 +134,9 @@ public class AuthController {
     public ResponseEntity<?> confirmarCuenta(@RequestParam String token) {
         boolean activado = usuarioService.confirmarToken(token);
         if (activado) {
+            // Redirige al frontend tras la activación
             return ResponseEntity.status(HttpStatus.FOUND)
-                    .location(URI.create("https://inventario-l7og7ec37-darkfirelycaons-projects.vercel.app"))
+                    .location(URI.create("http://localhost:4200/login?activado=true"))
                     .build();
         }
         return ResponseEntity.badRequest().body("Token inválido o expirado");

@@ -35,7 +35,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/public/**", "/auth/**", "/api/auth/**").permitAll()
                         .requestMatchers("/api/productos/search", "/api/productos/ofertas").permitAll()
-
+                        .requestMatchers("/api/chatbot/**").permitAll()
                         // 2. Lectura de productos permitida para todos
                         .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
 

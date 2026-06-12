@@ -30,7 +30,7 @@ public class CarritoItem {
       this.producto = producto;
       this.cantidad = cantidad;
       this.precioUnitario = precioUnitario;
-      double subtotal = 0;
+        this.subtotal = cantidad * precioUnitario;
     }
     // Getters y Setters
     public Long getId() { return id; }

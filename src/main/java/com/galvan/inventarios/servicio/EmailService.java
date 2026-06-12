@@ -1,52 +1,43 @@
 package com.galvan.inventarios.servicio;
 
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 @Service
 public class EmailService {
 
-    @Autowired(required = false)
+    @Autowired
     private JavaMailSender mailSender;
-
-    @Value("${spring.mail.host:NOT_CONFIGURED}")
-    private String mailHost;
-
-    public void enviarCorreoConfirmacion(String email, String nombre, String token) {
-        System.out.println("\n========== ENVÍO DE CORREO ==========");
-        System.out.println("Destino: " + email);
-        System.out.println("Usuario: " + nombre);
-        System.out.println("Token: " + token);
-
-        if (mailSender == null) {
-            System.out.println("⚠️ MailSender no configurado - Modo desarrollo");
-            System.out.println("Token de confirmación (usa este para activar): " + token);
-            System.out.println("Link: http://localhost:8080/auth/confirmar?token=" + token);
-            return;
-        }
-
-        try {
-            SimpleMailMessage mensaje = new SimpleMailMessage();
-            mensaje.setTo(email);
-            mensaje.setSubject("Confirma tu cuenta - Sistema de Inventarios");
-            mensaje.setText(String.format(
-                    "Hola %s,\n\n" +
-                            "Gracias por registrarte.\n\n" +
-                            "Para confirmar tu cuenta, haz clic en:\n" +
-                            "http://localhost:8080/auth/confirmar?token=%s\n\n" +
-                            "Saludos!",
-                    nombre, token
-            ));
-            mensaje.setFrom("noreply@inventarios.com");
-
-            mailSender.send(mensaje);
-            System.out.println("✅ Correo enviado a: " + email);
-        } catch (Exception e) {
-            System.err.println("❌ Error al enviar: " + e.getMessage());
-        }
-        System.out.println("=====================================\n");
+    public void enviarCorreoHTML(String email, String html) throws MessagingException {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+        helper.setTo(email);
+        helper.setSubject("Confirma tu cuenta");
+        helper.setText(html, true); // El 'true' indica que es HTML
+        mailSender.send(message);
     }
+    public void enviarCorreoConfirmacion(String email, String nombre, String token) {
+        try {
+            String urlConfirmacion = "http://localhost:8080/auth/confirmar?token=" + token;
+            String htmlContenido = "<h1>Bienvenido a Inventarios, " + nombre + "</h1>"
+                    + "<p>Haz clic en el siguiente botón para activar tu cuenta:</p>"
+                    + "<a href=\"" + urlConfirmacion + "\" style=\"padding:10px 20px; background-color:#28a745; color:white; border-radius:5px; text-decoration:none;\">Confirmar Cuenta</a>";
+
+            // Llamamos al método que sí envía HTML
+            enviarCorreoHTML(email, htmlContenido);
+
+            System.out.println("✅ ÉXITO: Correo HTML enviado a " + email);
+        } catch (Exception e) {
+            System.err.println("❌ ERROR AL ENVIAR CORREO HTML:");
+            e.printStackTrace();
+        }
+    }
+
+
 }

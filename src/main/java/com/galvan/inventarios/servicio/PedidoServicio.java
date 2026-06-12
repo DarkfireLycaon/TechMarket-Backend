@@ -40,7 +40,10 @@ public class PedidoServicio {
     @Transactional
     public Pedido crearPedido(Usuario usuario, PedidoDTO pedidoDTO) {
         Carrito carrito = carritoRepository.findByUsuario(usuario)
-                .orElseThrow(() -> new RuntimeException("Carrito vacío"));
+                .orElseThrow(() -> new RuntimeException("Carrito no encontrado"));
+
+        // 2. DEBUG CRUCIAL: Muestra cuántos items lee realmente de la BD
+        System.out.println("DEBUG: Ítems recuperados de BD: " + carrito.getItems().size());
 
         if (carrito.getItems().isEmpty()) {
             throw new RuntimeException("No hay productos en el carrito");
