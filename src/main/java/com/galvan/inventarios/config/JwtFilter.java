@@ -39,7 +39,6 @@ public class JwtFilter extends OncePerRequestFilter {
         // Salida rápida para rutas públicas
         if (path.startsWith("/api/public/") ||
                 path.startsWith("/api/chatbot/") ||
-                path.startsWith("/api/historial/") || // <--- AGREGA ESTA LÍNEA
                 (method.equals("GET") && path.startsWith("/api/productos/"))) {
 
             System.out.println("✅ Salida rápida aplicada para: " + path);
