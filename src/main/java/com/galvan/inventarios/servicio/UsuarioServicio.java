@@ -36,7 +36,7 @@ public class UsuarioServicio {
         // 4. Enviar correo usando el token generado
         // Asegúrate de que este método en tu SendGridApiService use la URL:
         // "https://techmarket-backend-6iqj.onrender.com/auth/confirmar?token=" + token
-        sendGridApiService.enviarCorreoConfirmacion(usuario.getEmail(), tokenActivacion);
+        sendGridApiService.enviarCorreoConfirmacion(usuario.getEmail(),usuario.getNombre(), tokenActivacion);
 
         return guardado;
     }
