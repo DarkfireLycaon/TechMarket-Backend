@@ -64,7 +64,8 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowedOriginPatterns(Arrays.asList(
-                "https://*.vercel.app",
+
+                "https://techmarket-frontend.onrender.com", // Añade tu frontend aquí
                 "http://localhost:4200",
                 "http://localhost:3000"
         ));
