@@ -11,9 +11,12 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class EmailService {
+    @Value("${app.url.base}")
+    private String urlBase;
 
     @Autowired
     private JavaMailSender mailSender;
+
     public void enviarCorreoHTML(String email, String html) throws MessagingException {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -24,7 +27,7 @@ public class EmailService {
     }
     public void enviarCorreoConfirmacion(String email, String nombre, String token) {
         try {
-            String urlConfirmacion = "http://localhost:8080/auth/confirmar?token=" + token;
+            String urlConfirmacion = urlBase + "/auth/confirmar?token=" + token;
             String htmlContenido = "<h1>Bienvenido a Inventarios, " + nombre + "</h1>"
                     + "<p>Haz clic en el siguiente botón para activar tu cuenta:</p>"
                     + "<a href=\"" + urlConfirmacion + "\" style=\"padding:10px 20px; background-color:#28a745; color:white; border-radius:5px; text-decoration:none;\">Confirmar Cuenta</a>";
