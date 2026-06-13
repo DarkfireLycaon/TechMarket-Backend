@@ -33,19 +33,26 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // ✅ CORRECCIÓN: Aquí añadimos /auth/** para que coincida con tu AuthController
-                        .requestMatchers("/auth/**", "/auth/registrar", "/auth/login", "/auth/confirmar").permitAll()
+                        // 1. Rutas de autenticación (SIEMPRE PRIMERO)
+                        .requestMatchers("/auth/**").permitAll()
 
+                        // 2. Rutas públicas explícitas
+                        .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("/api/productos/search", "/api/productos/ofertas").permitAll()
                         .requestMatchers("/api/chatbot/**").permitAll()
+
+                        // 3. GET público para productos (específico antes que el POST/PUT/DELETE)
                         .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
 
+                        // 4. Rutas protegidas por autoridad (ADMIN)
                         .requestMatchers(HttpMethod.POST, "/api/productos/**").hasAuthority("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/productos/**").hasAuthority("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/productos/**").hasAuthority("ADMIN")
                         .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
 
+                        // 5. Rutas autenticadas (Cualquier usuario logueado)
                         .requestMatchers("/api/carrito/**", "/api/pedidos/**").authenticated()
+
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

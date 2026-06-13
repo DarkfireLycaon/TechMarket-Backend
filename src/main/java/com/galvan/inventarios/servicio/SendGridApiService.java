@@ -9,15 +9,15 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class SendGridApiService {
-
     @Value("${sendgrid.api.key}")
     private String sendgridApiKey;
 
-    // Método existente
-    public void enviarCorreo(String para, String asunto, String contenido) {
+    // Método genérico para enviar emails
+    public void enviarCorreo(String para, String asunto, String contenido, boolean esHtml) {
         Email from = new Email("sistema@inventarios.com");
         Email to = new Email(para);
-        Content content = new Content("text/plain", contenido);
+        // Ajustamos el tipo de contenido según si es HTML o no
+        Content content = new Content(esHtml ? "text/html" : "text/plain", contenido);
         Mail mail = new Mail(from, asunto, to, content);
 
         SendGrid sg = new SendGrid(sendgridApiKey);
@@ -28,26 +28,34 @@ public class SendGridApiService {
             request.setEndpoint("mail/send");
             request.setBody(mail.build());
             Response response = sg.api(request);
-
             System.out.println("Correo enviado. Código: " + response.getStatusCode());
         } catch (Exception e) {
             System.err.println("Error enviando correo: " + e.getMessage());
         }
     }
 
-    // Método para confirmación de registro
-    public void enviarCorreoConfirmacion(String email, String nombre) {
+    // ✅ CORRECCIÓN: Ahora recibe el parámetro 'token'
+    public void enviarCorreoConfirmacion(String email, String nombre, String token) {
         String asunto = "Bienvenido a Inventarios";
-        String contenido = "Hola " + nombre + ",\n\nGracias por registrarte en el sistema de inventarios.\n\nSaludos!";
-        enviarCorreo(email, asunto, contenido);
+        // Usamos el token que llega por parámetro
+        String urlConfirmacion = "https://techmarket-backend-6iqj.onrender.com/auth/confirmar?token=" + token;
+
+        String contenido = "Hola " + nombre + ",<br><br>Haz clic aquí para activar tu cuenta:<br>" +
+                "<a href='" + urlConfirmacion + "'>Activar cuenta</a>";
+
+        // Enviamos 'true' para indicar que es HTML
+        enviarCorreo(email, asunto, contenido, true);
     }
 
-    // Método para recuperación de contraseña
+    // Método para recuperación
     public void enviarCorreoRecuperacion(String email, String token) {
         String asunto = "Recuperación de contraseña";
+        // Corregido: apunte a tu URL de producción en Render
+        String urlRecuperacion = "https://techmarket-frontend.onrender.com/reset-password?token=" + token;
+
         String contenido = "Hola,\n\nPara recuperar tu contraseña, haz clic en el siguiente enlace:\n\n" +
-                "http://localhost:8080/reset-password?token=" + token + "\n\n" +
-                "Si no solicitaste este cambio, ignora este correo.\n\nSaludos!";
-        enviarCorreo(email, asunto, contenido);
+                urlRecuperacion + "\n\nSaludos!";
+
+        enviarCorreo(email, asunto, contenido, false);
     }
 }

@@ -12,8 +12,7 @@ import java.util.Optional;
 
 @Service
 public class UsuarioServicio {
-
-    @Autowired // 👈 ESTO FALTABA
+    @Autowired
     private SendGridApiService sendGridApiService;
 
     @Autowired
@@ -22,24 +21,21 @@ public class UsuarioServicio {
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
 
-    // EmailService ya no es necesario, lo reemplazamos con SendGridApiService
-     @Autowired
-     private EmailService emailService; // 👈 ELIMINADO
-
     public Usuario registrar(Usuario usuario) {
-        // 1. Encriptar
+        // 1. Encriptar password
         usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
 
-        // 2. Generar código único para la URL (usamos un UUID largo para que sea seguro)
+        // 2. Generar token único para la activación (UUID largo para mayor seguridad)
         String tokenActivacion = UUID.randomUUID().toString();
-        usuario.setCodigoConfirmacion(tokenActivacion); // Guardamos el token aquí
+        usuario.setCodigoConfirmacion(tokenActivacion);
         usuario.setEnabled(false);
 
+        // 3. Guardar usuario
         Usuario guardado = usuarioRepositorio.save(usuario);
 
-        // 3. Enviar el correo CON ESTE TOKEN
-        // Asegúrate de que tu SendGridApiService construya la URL así:
-        // "https://techmarket-backend-6iqj.onrender.com/auth/confirmar?token=" + tokenActivacion
+        // 4. Enviar correo usando el token generado
+        // Asegúrate de que este método en tu SendGridApiService use la URL:
+        // "https://techmarket-backend-6iqj.onrender.com/auth/confirmar?token=" + token
         sendGridApiService.enviarCorreoConfirmacion(usuario.getEmail(), tokenActivacion);
 
         return guardado;
@@ -54,30 +50,17 @@ public class UsuarioServicio {
         usuario.setTokenExpiration(LocalDateTime.now().plusMinutes(15));
         usuarioRepositorio.save(usuario);
 
-        // ✅ Enviar correo de recuperación TAMBIÉN con SendGrid
-        sendGridApiService.enviarCorreoRecuperacion(usuario.getEmail(), token); // Necesitas crear este método
+        // Enviar correo de recuperación
+        sendGridApiService.enviarCorreoRecuperacion(usuario.getEmail(), token);
     }
 
-    public boolean confirmarCuenta(String email, String codigo) {
-        Optional<Usuario> usuarioOpt = usuarioRepositorio.findByEmail(email);
-        if (usuarioOpt.isPresent()) {
-            Usuario usuario = usuarioOpt.get();
-            if (codigo.equals(usuario.getCodigoConfirmacion())) {
-                usuario.setEnabled(true);
-                usuario.setCodigoConfirmacion(null);
-                usuarioRepositorio.save(usuario);
-                return true;
-            }
-        }
-        return false;
-    }
-
+    // Método para confirmación vía URL (el que estás usando)
     public boolean confirmarToken(String token) {
         Optional<Usuario> usuarioOpt = usuarioRepositorio.findByCodigoConfirmacion(token);
         if (usuarioOpt.isPresent()) {
             Usuario usuario = usuarioOpt.get();
             usuario.setEnabled(true);
-            usuario.setCodigoConfirmacion(null);
+            usuario.setCodigoConfirmacion(null); // Limpiamos el token tras usarlo
             usuarioRepositorio.save(usuario);
             return true;
         }
@@ -98,6 +81,4 @@ public class UsuarioServicio {
         usuarioRepositorio.save(usuario);
     }
 
-    // Los métodos generarHtmlConfirmacion y generarHtmlRecuperacion
-    // ahora están en SendGridApiService, así que los eliminamos de aquí
 }
