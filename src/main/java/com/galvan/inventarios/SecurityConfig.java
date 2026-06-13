@@ -40,6 +40,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("/api/productos/search", "/api/productos/ofertas").permitAll()
                         .requestMatchers("/api/chatbot/**").permitAll()
+                        .requestMatchers("/api/categorias/**").permitAll()
+
 
                         // 3. GET público para productos (específico antes que el POST/PUT/DELETE)
                         .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
