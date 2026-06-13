@@ -27,20 +27,22 @@ public class UsuarioServicio {
      private EmailService emailService; // 👈 ELIMINADO
 
     public Usuario registrar(Usuario usuario) {
-        // Encriptar password
+        // 1. Encriptar
         usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
 
-        // Generar código de 6 dígitos
-        String codigo = String.valueOf((int)(Math.random() * 900000) + 100000);
-        usuario.setCodigoConfirmacion(codigo);
+        // 2. Generar código único para la URL (usamos un UUID largo para que sea seguro)
+        String tokenActivacion = UUID.randomUUID().toString();
+        usuario.setCodigoConfirmacion(tokenActivacion); // Guardamos el token aquí
         usuario.setEnabled(false);
 
         Usuario guardado = usuarioRepositorio.save(usuario);
 
-        // ✅ Enviar correo de confirmación con SendGrid
-        emailService.enviarCorreoConfirmacion(usuario.getEmail(), usuario.getNombre(), codigo);
-        return guardado;
+        // 3. Enviar el correo CON ESTE TOKEN
+        // Asegúrate de que tu SendGridApiService construya la URL así:
+        // "https://techmarket-backend-6iqj.onrender.com/auth/confirmar?token=" + tokenActivacion
+        sendGridApiService.enviarCorreoConfirmacion(usuario.getEmail(), tokenActivacion);
 
+        return guardado;
     }
 
     public void generarTokenRecuperacion(String email) {
