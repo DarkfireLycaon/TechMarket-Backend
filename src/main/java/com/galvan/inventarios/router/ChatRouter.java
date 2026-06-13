@@ -1,13 +1,16 @@
 package com.galvan.inventarios.router;
 
 import com.galvan.inventarios.estrategia.ChatStrategy;
+import com.galvan.inventarios.servicio.ChatBotService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
 public class ChatRouter {
-
+    @Autowired
+    private ChatBotService chatBotService;
     private final List<ChatStrategy> estrategias;
 
     // Spring inyecta automáticamente TODAS las clases que implementan ChatStrategy
@@ -23,5 +26,12 @@ public class ChatRouter {
                 .findFirst()
                 .map(e -> e.procesar(mensaje, email))
                 .orElse("Lo siento, no logré entender tu solicitud.");
+    }
+    public Object gestionarPregunta(String mensaje, String email) {
+        return estrategias.stream()
+                .filter(e -> e.esAplicable(mensaje))
+                .findFirst()
+                .map(e -> e.procesar(mensaje, email))
+                .orElse("No pude procesar tu solicitud.");
     }
     }

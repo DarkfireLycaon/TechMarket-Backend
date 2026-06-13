@@ -17,19 +17,18 @@ import java.util.Map;
 @RequestMapping("/api/chatbot")
 @CrossOrigin(origins = "http://localhost:4200")
 public class ChatBotController {
+    @Autowired
+    private ChatBotService chatBotService; // Asegúrate de tener esta inyección
 
     @Autowired
     private ChatRouter chatRouter; // Ahora inyectamos el Router, no el servicio directo
 
     @GetMapping("/consulta")
-    public ResponseEntity<Object> responderConsulta(@RequestParam(name = "nombre") String nombre) {
-        System.out.println("🔍 Recibida consulta: '" + nombre + "'");
+    public ResponseEntity<Object> responderConsulta(@RequestParam(name = "nombre") String pregunta) {
+        // Si no tienes el email del usuario en la petición, pasa un valor nulo o "invitado"
+        String emailUsuario = "invitado@sistema.com";
 
-        String emailUsuario = "usuario@ejemplo.com";
-        Object respuesta = chatRouter.manejarMensaje(nombre, emailUsuario);
-
-        // Spring detectará automáticamente si 'respuesta' es String o List
-        // y lo serializará correctamente a JSON.
+        Object respuesta = chatRouter.gestionarPregunta(pregunta, emailUsuario);
         return ResponseEntity.ok(respuesta);
     }
 }
