@@ -9,6 +9,8 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import java.io.UnsupportedEncodingException;
+
 @Service
 public class EmailService {
     @Value("${app.url.base}")
@@ -17,9 +19,10 @@ public class EmailService {
     @Autowired
     private JavaMailSender mailSender;
 
-    public void enviarCorreoHTML(String email, String html) throws MessagingException {
+    public void enviarCorreoHTML(String email, String html) throws MessagingException, UnsupportedEncodingException {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+        helper.setFrom("noreply@inventario-app.com", "Inventarios TechMarket");
         helper.setTo(email);
         helper.setSubject("Confirma tu cuenta");
         helper.setText(html, true); // El 'true' indica que es HTML
